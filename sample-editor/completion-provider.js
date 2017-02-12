@@ -14,7 +14,11 @@ function getLastOpenedTag(text) {
 			var closingBracketIdx = text.indexOf('/>', tagPosition);
 			if (closingBracketIdx === -1) {
 				if (!closingTags.length || closingTags[closingTags.length - 1] !== tag) {
-					return tag;
+					text = text.substring(tagPosition);
+					return {
+						tagName: tag,
+						isAttributeSearch: text.indexOf('<') > text.indexOf('>')
+					};
 				}
 				closingTags.splice(closingTags.length - 1, 1);
 			}
@@ -46,7 +50,7 @@ function shouldSkipLevel(tagName) {
 
 function findElements(elements, elementName) {
 	for (var i = 0; i < elements.length; i++) {
-		if (elements[i].tagName !== 'annotation') {
+		if (elements[i].tagName !== 'annotation' && elements[i].tagName !== 'attribute') {
 			if (shouldSkipLevel(elements[i].tagName)) {
 				var child = findElements(elements[i].children, elementName);
 				if (child) {
@@ -61,6 +65,22 @@ function findElements(elements, elementName) {
 			}
 		}
 	}
+}
+
+function findAttributes(elements) {
+	var attrs = [];
+	for (var i = 0; i < elements.length; i++) {
+		if (elements[i].tagName === 'complexType') {
+			var child = findAttributes(elements[i].children);
+			if (child) {
+				return child;
+			}
+		}
+		else if (elements[i].tagName === 'attribute') {
+			attrs.push(elements[i]);
+		}
+	}
+	return attrs;
 }
 
 function getElementAttributes(element) {
@@ -106,7 +126,7 @@ function isItemAvailable(itemName, maxOccurs, items) {
 	return count === 0 || parseInt(maxOccurs) > count;
 }
 
-function getAvailableItems(monaco, elements, usedItems) {
+function getAvailableElements(monaco, elements, usedItems) {
 	var availableItems = [];
 	var children;
 	for (var i = 0; i < elements.length; i++) {
@@ -122,8 +142,33 @@ function getAvailableItems(monaco, elements, usedItems) {
 		if (isItemAvailable(elementAttrs.name, elementAttrs.maxOccurs, usedItems)) {
 			availableItems.push({
 				label: elementAttrs.name,
-				kind: monaco.languages.CompletionItemKind.Class,
+				kind: monaco.languages.CompletionItemKind.Field,
 				detail: elementAttrs.type,
+				documentation: getItemDocumentation(children[i])
+			});
+		}
+	}
+	return availableItems;
+}
+
+function getAvailableAttribute(monaco, elements, usedChildTags) {
+	var availableItems = [];
+	var children;
+	for (var i = 0; i < elements.length; i++) {
+		if (elements[i].tagName !== 'annotation') {
+			children = findAttributes([elements[i]])
+		}
+	}
+	if (!children) {
+		return [];
+	}
+	for (var i = 0; i < children.length; i++) {
+		var attrs = getElementAttributes(children[i]);
+		if (isItemAvailable(attrs.name, attrs.maxOccurs, usedChildTags)) {
+			availableItems.push({
+				label: attrs.name,
+				kind: monaco.languages.CompletionItemKind.Property,
+				detail: attrs.type,
 				documentation: getItemDocumentation(children[i])
 			});
 		}
@@ -142,16 +187,23 @@ function getXmlCompletionProvider(monaco) {
 			}
 			var lastOpenedTag = getLastOpenedTag(areaUntilPositionInfo.clearedText);
 			var xmlDoc = stringToXml(textUntilPosition);
-
 			var openedTags = [];
-			var usedChildTags = [];
+			var usedItems = [];
 			var lastChild = xmlDoc.lastElementChild;
 			while (lastChild) {
 				openedTags.push(lastChild.tagName);
-				if (lastChild.tagName === lastOpenedTag) {
-					var children = lastChild.children;
-					for (var i = 0; i < children.length; i++) {
-						usedChildTags.push(children[i].tagName);
+				if (lastChild.tagName === lastOpenedTag.tagName) {
+					if (lastOpenedTag.isAttributeSearch) {
+						var attrs = lastChild.attributes;
+						for (var i = 0; i< attrs.length; i++) {
+							usedItems.push(attrs[i].nodeName);
+						}
+					}
+					else {
+						var children = lastChild.children;
+						for (var i = 0; i < children.length; i++) {
+							usedItems.push(children[i].tagName);
+						}
 					}
 					break;
 				}
@@ -159,10 +211,19 @@ function getXmlCompletionProvider(monaco) {
 			}
 			var currentItem = schemaNode;
 			for (var i = 0; i < openedTags.length; i++) {
-				currentItem = findElements(currentItem.children, openedTags[i]);
+				if (currentItem) {
+					currentItem = findElements(currentItem.children, openedTags[i]);
+				}
 			}
-			var result = currentItem ? getAvailableItems(monaco, currentItem.children, usedChildTags) : [];
-			return result;
+
+			if (lastOpenedTag.isAttributeSearch) {
+				// get attributes completions
+				return currentItem ? getAvailableAttribute(monaco, currentItem.children, usedItems) : [];
+			}
+			else {
+				// get elements completions
+				return currentItem ? getAvailableElements(monaco, currentItem.children, usedItems) : [];
+			}
 		}
 	}
 }

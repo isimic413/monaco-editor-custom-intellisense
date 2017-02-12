@@ -71,6 +71,11 @@ var xmlSchemaString =
         </xs:complexType>
       </xs:element>
     </xs:sequence>
+    <xs:attribute name="orderid" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>Attribute example.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 </xs:element>
 </xs:schema>`.replace(/xs\:/g, '')
