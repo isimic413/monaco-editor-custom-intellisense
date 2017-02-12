@@ -40,19 +40,25 @@ function getAreaInfo(text) {
 	};
 }
 
+function shouldSkipLevel(tagName) {
+	return tagName === 'complexType' || tagName === 'all' || tagName === 'sequence';
+}
+
 function findElements(elements, elementName) {
 	for (var i = 0; i < elements.length; i++) {
-		if (elements[i].tagName === 'complexType' || elements[i].tagName === 'all' || elements[i].tagName === 'sequence') {
-			var child = findElements(elements[i].children, elementName);
-			if (child) {
-				return child;
+		if (elements[i].tagName !== 'annotation') {
+			if (shouldSkipLevel(elements[i].tagName)) {
+				var child = findElements(elements[i].children, elementName);
+				if (child) {
+					return child;
+				}
 			}
-		}
-		else if (!elementName) {
-			return elements;
-		}
-		else if (getElementAttributes(elements[i]).name === elementName) {
-			return elements[i];
+			else if (!elementName) {
+				return elements;
+			}
+			else if (getElementAttributes(elements[i]).name === elementName) {
+				return elements[i];
+			}
 		}
 	}
 }
@@ -65,19 +71,60 @@ function getElementAttributes(element) {
 	return attrs;
 }
 
-function getAvailableItems(monaco, elements, unavailableItems) {
+function getItemDocumentation(element) {
+	for (var i = 0; i < element.children.length; i++) {
+		if (element.children[i].tagName === 'annotation') {
+			return getItemDocumentation(element.children[0]);
+		}
+		else if (element.children[i].tagName === 'documentation') {
+			return element.children[i].textContent;
+		}
+	}
+}
+
+function getAppereanceCount(itemName, items) {
+	var count = 0;
+	for (var i = 0; i < items.length; i++) {
+		if (items[i] === itemName) {
+			count++;
+		}
+	}
+	return count;
+}
+
+function isItemAvailable(itemName, maxOccurs, items) {
+	maxOccurs = maxOccurs || '1';
+	if (maxOccurs && maxOccurs === 'unbounded') {
+		return true;
+	}
+	var count = 0;
+	for (var i = 0; i < items.length; i++) {
+		if (items[i] === itemName) {
+			count++;
+		}
+	}
+	return count === 0 || parseInt(maxOccurs) > count;
+}
+
+function getAvailableItems(monaco, elements, usedItems) {
 	var availableItems = [];
-	var children = findElements(elements);
+	var children;
+	for (var i = 0; i < elements.length; i++) {
+		if (elements[i].tagName !== 'annotation') {
+			children = findElements([elements[i]])
+		}
+	}
 	if (!children) {
 		return [];
 	}
 	for (var i = 0; i < children.length; i++) {
 		let elementAttrs = getElementAttributes(children[i]);
-		if (unavailableItems.indexOf(elementAttrs.name) === -1) {
+		if (isItemAvailable(elementAttrs.name, elementAttrs.maxOccurs, usedItems)) {
 			availableItems.push({
 				label: elementAttrs.name,
 				kind: monaco.languages.CompletionItemKind.Class,
-				detail: elementAttrs.type
+				detail: elementAttrs.type,
+				documentation: getItemDocumentation(children[i])
 			});
 		}
 	}
@@ -114,7 +161,8 @@ function getXmlCompletionProvider(monaco) {
 			for (var i = 0; i < openedTags.length; i++) {
 				currentItem = findElements(currentItem.children, openedTags[i]);
 			}
-			return currentItem ? getAvailableItems(monaco, currentItem.children, usedChildTags) : [];
+			var result = currentItem ? getAvailableItems(monaco, currentItem.children, usedChildTags) : [];
+			return result;
 		}
 	}
 }
