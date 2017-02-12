@@ -29,6 +29,6 @@ require(['vs/editor/editor.main'], function() {
 </shiporder>`
 	});
 
-	registerHoverProvider(monaco);
-	registerCompletionProvider(monaco);
+	monaco.languages.registerHoverProvider('xml', getXmlHoverProvider(monaco));
+	monaco.languages.registerCompletionItemProvider('xml', getXmlCompletionProvider(monaco));
 });

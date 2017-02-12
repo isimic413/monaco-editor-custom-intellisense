@@ -65,8 +65,6 @@ function getElementAttributes(element) {
 	return attrs;
 }
 
-
-
 function getAvailableItems(monaco, elements, unavailableItems) {
 	var availableItems = [];
 	var children = findElements(elements);
@@ -86,8 +84,8 @@ function getAvailableItems(monaco, elements, unavailableItems) {
 	return availableItems;
 }
 
-function registerCompletionProvider(monaco) {
-	monaco.languages.registerCompletionItemProvider('xml', {
+function getXmlCompletionProvider(monaco) {
+	return {
 		triggerCharacters: ['<'],
 		provideCompletionItems: function(model, position) {
 			var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
@@ -118,5 +116,5 @@ function registerCompletionProvider(monaco) {
 			}
 			return currentItem ? getAvailableItems(monaco, currentItem.children, usedChildTags) : [];
 		}
-	});
+	}
 }
