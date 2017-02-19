@@ -1,7 +1,8 @@
+# Custom IntelliSense with Monaco Editor
 
-# Monaco Editor Samples
+Cloned from [monaco-editor-samples](https://github.com/Microsoft/monaco-editor-samples) repository.
 
-Standalone HTML samples showing how to integrate the Monaco Editor.
+Uses `simple-editor` example as a start to create custom completion item provider for the `XML`.
 
 ## Running
 
@@ -12,7 +13,7 @@ npm install .
 npm run simpleserver
 ```
 
-Go to <a href="http://localhost:8888">localhost:8888</a> and explore the samples!
+Go to <a href="http://localhost:8888">localhost:8888</a> and go to simple-editor example.
 
 ## License
 
