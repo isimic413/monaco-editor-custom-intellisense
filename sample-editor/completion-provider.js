@@ -233,38 +233,42 @@ function getXmlCompletionProvider(monaco) {
 			}
             // if we want suggestions, inside of which tag are we?
 			var lastOpenedTag = getLastOpenedTag(areaUntilPositionInfo.clearedText);
-            // parse the content (not cleared text) into an xml document
-			var xmlDoc = stringToXml(textUntilPosition);
             // get opened tags to see what tag we should look for in the XSD schema
 			var openedTags = [];
             // get the elements/attributes that are already mentioned in the element we're in
 			var usedItems = [];
-			var lastChild = xmlDoc.lastElementChild;
-			while (lastChild) {
-				openedTags.push(lastChild.tagName);
-				// if we found our last opened tag
-				if (lastChild.tagName === lastOpenedTag.tagName) {
-					// if we are looking for attributes, then used items should
-					// be the attributes we already used
-					if (lastOpenedTag.isAttributeSearch) {
-						var attrs = lastChild.attributes;
-						for (var i = 0; i< attrs.length; i++) {
-							usedItems.push(attrs[i].nodeName);
+			var isAttributeSearch = lastOpenedTag && lastOpenedTag.isAttributeSearch;
+			// no need to calculate the position in the XSD schema if we are in the root element
+			if (lastOpenedTag) {
+				// parse the content (not cleared text) into an xml document
+				var xmlDoc = stringToXml(textUntilPosition);
+				var lastChild = xmlDoc.lastElementChild;
+				while (lastChild) {
+					openedTags.push(lastChild.tagName);
+					// if we found our last opened tag
+					if (lastChild.tagName === lastOpenedTag.tagName) {
+						// if we are looking for attributes, then used items should
+						// be the attributes we already used
+						if (lastOpenedTag.isAttributeSearch) {
+							var attrs = lastChild.attributes;
+							for (var i = 0; i< attrs.length; i++) {
+								usedItems.push(attrs[i].nodeName);
+							}
 						}
-					}
-					else {
-						// if we are looking for child elements, then used items
-						// should be the elements that were already used
-						var children = lastChild.children;
-						for (var i = 0; i < children.length; i++) {
-							usedItems.push(children[i].tagName);
+						else {
+							// if we are looking for child elements, then used items
+							// should be the elements that were already used
+							var children = lastChild.children;
+							for (var i = 0; i < children.length; i++) {
+								usedItems.push(children[i].tagName);
+							}
 						}
+						break;
 					}
-					break;
+					// we haven't found the last opened tag yet, so we move to
+					// the next element
+					lastChild = lastChild.lastElementChild;
 				}
-				// we haven't found the last opened tag yet, so we move to
-				// the next element
-				lastChild = lastChild.lastElementChild;
 			}
             // find the last opened tag in the schema to see what elements/attributes it can have
 			var currentItem = schemaNode;
@@ -276,7 +280,7 @@ function getXmlCompletionProvider(monaco) {
 
             // return available elements/attributes if the tag exists in the schema, or an empty
             // array if it doesn't
-			if (lastOpenedTag.isAttributeSearch) {
+			if (isAttributeSearch) {
 				// get attributes completions
 				return currentItem ? getAvailableAttribute(monaco, currentItem.children, usedItems) : [];
 			}
