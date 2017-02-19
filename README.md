@@ -4,7 +4,7 @@ Cloned from [monaco-editor-samples](https://github.com/Microsoft/monaco-editor-s
 
 Uses `simple-editor` example as a start to create custom completion item provider for the `XML`.
 
-## Running
+## Running `monaco-editor-samples`
 
 ```
 git clone https://github.com/Microsoft/monaco-editor-samples.git
