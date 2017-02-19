@@ -78,7 +78,7 @@ var xmlSchemaString =
     </xs:attribute>
   </xs:complexType>
 </xs:element>
-</xs:schema>`.replace(/xs\:/g, '')
+</xs:schema>`.replace(/xs\:/g, ''); // remove 'xs:' prefix for easier navigation later
 
 function stringToXml(text) {
 	var xmlDoc;

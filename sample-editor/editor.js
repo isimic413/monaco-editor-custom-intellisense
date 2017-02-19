@@ -2,9 +2,9 @@ require.config({paths: { 'vs': '../node_modules/monaco-editor/min/vs' }});
 
 require(['vs/editor/editor.main'], function() {
 	var editor = monaco.editor.create(document.getElementById('container'), {
-		theme: 'vs-dark',
+		theme: 'vs-dark', // dark theme
 		language: 'xml',
-		suggestOnTriggerCharacters: true,
+		suggestOnTriggerCharacters: true, // show suggestions when we type one of the trigger characters
 		value: `<?xml version="1.0" encoding="UTF-8"?>
 
 <shiporder>
@@ -26,8 +26,9 @@ require(['vs/editor/editor.main'], function() {
     <quantity>1</quantity>
     <price>9.90</price>
   </item>
-</shiporder>`
+</shiporder>` // two rows in the initial value
 	});
 
+  // register a completion item provider for xml language
 	monaco.languages.registerCompletionItemProvider('xml', getXmlCompletionProvider(monaco));
 });
